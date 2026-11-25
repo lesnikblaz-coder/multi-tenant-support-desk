@@ -1,0 +1,13 @@
+multi_tenant_support_desk/.env
+.env.*
+.git
+multi_tenant_support_desk/.gitignore
+
+.venv
+venv
+
+__pycache__
+*.pyc
+
+.pytest_cache
+.mypy_cache

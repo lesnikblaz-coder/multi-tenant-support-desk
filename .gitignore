@@ -1,0 +1,17 @@
+# Virtual environments
+multi_tenant_support_desk/.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Environment variables
+multi_tenant_support_desk/.env
+.env
+.env.*
+
+# Local notes
+design.txt
+
+.git/
