@@ -39,9 +39,11 @@ async def test_duplicate_email_rejected(
 
     user2 = user_factory("user1")
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         async with test_session_factory.begin() as session:
             session.add(user2)
+
+    assert exc_info.value.orig.sqlstate == "23505"
 
 
 async def test_user_can_belong_to_multiple_organizations(
@@ -54,7 +56,6 @@ async def test_user_can_belong_to_multiple_organizations(
     user = user_factory("user")
     org1 = organization_factory("Test Organization 1")
     org2 = organization_factory("Test Organization 2")
-
 
     async with test_session_factory.begin() as session:
         session.add_all([user, org1, org2])
@@ -131,9 +132,11 @@ async def test_duplicate_membership_rejected(
         role=UserRole.MEMBER
     )
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         async with test_session_factory.begin() as session:
             session.add(membership2)
+
+    assert exc_info.value.orig.sqlstate == "23505"
 
 
 async def test_membership_with_nonexistent_user_rejected(
@@ -153,9 +156,11 @@ async def test_membership_with_nonexistent_user_rejected(
         role=UserRole.ADMIN
     )
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         async with test_session_factory.begin() as session:
             session.add(membership1)
+
+    assert exc_info.value.orig.sqlstate == "23503"
 
 
 async def test_membership_with_nonexistent_organization_rejected(
@@ -175,6 +180,8 @@ async def test_membership_with_nonexistent_organization_rejected(
         role=UserRole.ADMIN
     )
 
-    with pytest.raises(IntegrityError):
+    with pytest.raises(IntegrityError) as exc_info:
         async with test_session_factory.begin() as session:
             session.add(membership1)
+
+    assert exc_info.value.orig.sqlstate == "23503"
