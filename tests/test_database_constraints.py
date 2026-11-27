@@ -1,8 +1,11 @@
 import pytest
 
 from uuid import uuid4
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from sqlalchemy.exc import IntegrityError
 
+from src.db.models.user import User
 from src.db.models.organization_membership import OrganizationMembership
 from src.enums import UserRole
 
@@ -54,9 +57,7 @@ async def test_user_can_belong_to_multiple_organizations(
 
 
     async with test_session_factory.begin() as session:
-        session.add(user)
-        session.add(org1)
-        session.add(org2)
+        session.add_all([user, org1, org2])
 
     membership1 = OrganizationMembership(
         user_id=user.id,
@@ -71,14 +72,35 @@ async def test_user_can_belong_to_multiple_organizations(
     )
 
     async with test_session_factory.begin() as session:
-        session.add(membership1)
-        session.add(membership2)
+        session.add_all([membership1, membership2])
 
     assert membership1.user_id == membership2.user_id
-    assert membership1.role == UserRole.ADMIN
-    assert membership2.role == UserRole.MEMBER
-    assert membership1.removed_at is None
-    assert membership2.removed_at is None
+
+    async with test_session_factory.begin() as session:
+        stmt = (
+            select(User)
+            .where(User.email == user.email)
+            .options(
+                selectinload(User.memberships)
+            )
+        )
+
+        result = await session.execute(stmt)
+
+        db_user = result.scalar_one_or_none()
+
+    assert db_user
+    assert len(db_user.memberships) == 2
+
+    org_to_role = {
+        m.organization_id: m.role
+        for m in db_user.memberships
+    }
+
+    assert org_to_role == {
+        membership1.organization_id: membership1.role,
+        membership2.organization_id: membership2.role
+    }
 
 
 async def test_duplicate_membership_rejected(
@@ -92,14 +114,16 @@ async def test_duplicate_membership_rejected(
     org = organization_factory("Test Organization")
 
     async with test_session_factory.begin() as session:
-        session.add(user)
-        session.add(org)
+        session.add_all([user, org])
 
     membership1 = OrganizationMembership(
         user_id=user.id,
         organization_id=org.id,
         role=UserRole.ADMIN
     )
+
+    async with test_session_factory.begin() as session:
+        session.add(membership1)
 
     membership2 = OrganizationMembership(
         user_id=user.id,
@@ -109,7 +133,6 @@ async def test_duplicate_membership_rejected(
 
     with pytest.raises(IntegrityError):
         async with test_session_factory.begin() as session:
-            session.add(membership1)
             session.add(membership2)
 
 
