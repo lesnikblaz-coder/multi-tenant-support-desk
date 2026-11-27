@@ -1,3 +1,4 @@
+import pytest
 import pytest_asyncio
 
 from sqlalchemy import NullPool
@@ -5,6 +6,8 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
 from src.core.config import settings
 from src.db.base import Base
+from src.db.models.user import User
+from src.db.models.organization import Organization
 
 test_async_engine = create_async_engine(
     url=settings.test_async_db_url,
@@ -43,3 +46,22 @@ async def test_session_factory():
 
         finally:
             await transaction.rollback()
+
+
+@pytest.fixture
+def user_factory():
+    def _create_user(email_prefix: str) -> User:
+        return User(
+            email=f"{email_prefix}@test.com",
+            password_hash="testpasswordhash123"
+        )
+
+    return _create_user
+
+
+@pytest.fixture
+def organization_factory():
+    def _create_org(name: str) -> Organization:
+        return Organization(name=name)
+
+    return _create_org
