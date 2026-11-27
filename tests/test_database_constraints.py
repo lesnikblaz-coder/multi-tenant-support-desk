@@ -1,5 +1,6 @@
 import pytest
 
+from uuid import uuid4
 from sqlalchemy.exc import IntegrityError
 
 from src.db.models.organization_membership import OrganizationMembership
@@ -110,3 +111,25 @@ async def test_duplicate_membership_rejected(
         async with test_session_factory.begin() as session:
             session.add(membership1)
             session.add(membership2)
+
+
+async def test_membership_with_nonexistent_user_rejected(
+        test_session_factory,
+        organization_factory
+) -> None:
+    """A membership with a valid organization ID but a nonexistent user ID gets rejected."""
+
+    org = organization_factory("Test Organization")
+
+    async with test_session_factory.begin() as session:
+        session.add(org)
+
+    membership1 = OrganizationMembership(
+        user_id=uuid4(),
+        organization_id=org.id,
+        role=UserRole.ADMIN
+    )
+
+    with pytest.raises(IntegrityError):
+        async with test_session_factory.begin() as session:
+            session.add(membership1)
