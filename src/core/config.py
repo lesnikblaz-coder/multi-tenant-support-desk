@@ -31,14 +31,14 @@ class Settings(BaseSettings):
         )
 
     @property
-    async def async_db_url(self) -> str:
+    def async_db_url(self) -> str:
         return (
             f"postgresql+asyncpg://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
 
     @property
-    async def test_async_db_url(self) -> str:
+    def test_async_db_url(self) -> str:
         return (
             f"postgresql+asyncpg://{self.TEST_DB_USER}:{self.TEST_DB_PASSWORD}"
             f"@{self.TEST_DB_HOST}:{self.TEST_DB_PORT}/{self.TEST_DB_NAME}"
