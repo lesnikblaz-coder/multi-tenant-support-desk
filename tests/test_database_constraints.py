@@ -78,3 +78,35 @@ async def test_user_can_belong_to_multiple_organizations(
     assert membership2.role == UserRole.MEMBER
     assert membership1.removed_at is None
     assert membership2.removed_at is None
+
+
+async def test_duplicate_membership_rejected(
+        test_session_factory,
+        user_factory,
+        organization_factory
+) -> None:
+    """Composite primary key successfully prevents duplicate memberships."""
+
+    user = user_factory("user")
+    org = organization_factory("Test Organization")
+
+    async with test_session_factory.begin() as session:
+        session.add(user)
+        session.add(org)
+
+    membership1 = OrganizationMembership(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN
+    )
+
+    membership2 = OrganizationMembership(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.MEMBER
+    )
+
+    with pytest.raises(IntegrityError):
+        async with test_session_factory.begin() as session:
+            session.add(membership1)
+            session.add(membership2)
