@@ -117,7 +117,7 @@ async def test_membership_with_nonexistent_user_rejected(
         test_session_factory,
         organization_factory
 ) -> None:
-    """A membership with a valid organization ID but a nonexistent user ID gets rejected."""
+    """A membership with a valid organization (ID) but a nonexistent user (ID) gets rejected."""
 
     org = organization_factory("Test Organization")
 
@@ -127,6 +127,28 @@ async def test_membership_with_nonexistent_user_rejected(
     membership1 = OrganizationMembership(
         user_id=uuid4(),
         organization_id=org.id,
+        role=UserRole.ADMIN
+    )
+
+    with pytest.raises(IntegrityError):
+        async with test_session_factory.begin() as session:
+            session.add(membership1)
+
+
+async def test_membership_with_nonexistent_organization_rejected(
+        test_session_factory,
+        user_factory
+) -> None:
+    """A membership with a valid user (ID) but a nonexistent organization (ID) gets rejected."""
+
+    user = user_factory("user")
+
+    async with test_session_factory.begin() as session:
+        session.add(user)
+
+    membership1 = OrganizationMembership(
+        user_id=user.id,
+        organization_id=uuid4(),
         role=UserRole.ADMIN
     )
 
