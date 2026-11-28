@@ -3,11 +3,17 @@ import pytest_asyncio
 
 from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from alembic import command
+from alembic.config import Config
+from pathlib import Path
 
 from src.core.config import settings
-from src.db.base import Base
 from src.db.models.user import User
 from src.db.models.organization import Organization
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
 
 test_async_engine = create_async_engine(
     url=settings.test_async_db_url,
@@ -15,19 +21,18 @@ test_async_engine = create_async_engine(
 )
 
 
-@pytest_asyncio.fixture(
-    scope="session",
-    loop_scope="session",
-    autouse=True
-)
+@pytest_asyncio.fixture(scope="session", loop_scope="session", autouse=True)
 async def setup_database():
-    async with test_async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+    alembic_config = Config(str(PROJECT_ROOT / "alembic.ini"))
 
-    yield
+    alembic_config.attributes["database_url"] = settings.test_sync_db_url
 
-    async with test_async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+    command.upgrade(alembic_config, "head")
+
+    try:
+        yield
+    finally:
+        command.downgrade(alembic_config, "base")
 
 
 @pytest_asyncio.fixture
