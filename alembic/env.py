@@ -14,7 +14,15 @@ from src.db.base import Base
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.sync_db_url)
+
+# in tests, a custom test database url is provided to .attributes so alembic uses that
+# if it's none, alembic uses the normal developments sync db url
+database_url = config.attributes.get("database_url", settings.sync_db_url)
+
+config.set_main_option(
+    "sqlalchemy.url",
+    database_url.replace("%", "%%")
+)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
